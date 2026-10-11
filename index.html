@@ -1914,12 +1914,18 @@ function oThanhVien(tv){
     {id:'quan_he', nhan:'Quan hệ với người thuê', kieu:'chon', gt:tv.quan_he||'',
      chon:[['','Chưa chọn']].concat(QUAN_HE.map(function(x){ return [x,x]; }))},
     {id:'sdt', nhan:'Điện thoại', gt:tv.sdt, goiY:'0909 123 456'},
-    {id:'so_dinh_danh', nhan:'Số căn cước', gt:tv.so_dinh_danh, goiY:'12 chữ số'},
+    {id:'gioi_tinh', nhan:'Giới tính', kieu:'chon', gt:tv.gioi_tinh||'',
+     chon:[['','Chưa khai'],['nam','Nam'],['nu','Nữ'],['khac','Khác']]},
     {id:'ngay_sinh', nhan:'Ngày sinh', kieu:'ngay', gt:tv.ngay_sinh?String(tv.ngay_sinh).slice(0,10):''},
+    {id:'so_dinh_danh', nhan:'Số căn cước', gt:tv.so_dinh_danh, goiY:'12 chữ số'},
     {id:'ngay_cap', nhan:'Ngày cấp', kieu:'ngay', gt:tv.ngay_cap?String(tv.ngay_cap).slice(0,10):''},
     {id:'noi_cap', nhan:'Nơi cấp', gt:(tv.id? tv.noi_cap : 'BỘ CÔNG AN')},
     {id:'noi_cu_tru', nhan:'Nơi thường trú', rong:true, gt:tv.noi_cu_tru, goiY:'Số nhà, đường, phường, tỉnh thành'},
     {id:'ngay_vao', nhan:'Ngày vào ở', kieu:'ngay', gt:tv.ngay_vao?String(tv.ngay_vao).slice(0,10):homNayVN()},
+    {id:'da_khai_bao', nhan:'Đã khai báo tạm trú', kieu:'batTat', gt:!!tv.da_khai_bao},
+    {id:'ngay_khai_bao', nhan:'Ngày khai báo tạm trú', kieu:'ngay',
+     gt:tv.ngay_khai_bao?String(tv.ngay_khai_bao).slice(0,10):'',
+     goi:'Để trống thì bấm Lưu sẽ tự điền ngày hôm nay.'},
     {id:'ghi_chu', nhan:'Ghi chú', kieu:'dai', rong:true, gt:tv.ghi_chu}
   ];
 }
@@ -1929,6 +1935,17 @@ function kiemThanhVien(g){
     return 'Số căn cước chỉ gồm chữ số, 9 tới 12 số. Bỏ trống cũng được.';
   if(g.sdt && !/^[0-9\s.+()-]{8,15}$/.test(g.sdt)) return 'Số điện thoại trông không hợp lệ.';
   return null;
+}
+function thanThanhVien(g){
+  return {
+    ho_ten:g.ho_ten.trim(), sdt:g.sdt||null, gioi_tinh:g.gioi_tinh||null,
+    so_dinh_danh:g.so_dinh_danh||null, ngay_sinh:g.ngay_sinh||null,
+    ngay_cap:g.ngay_cap||null, noi_cap:g.noi_cap||null,
+    noi_cu_tru:g.noi_cu_tru||null, quan_he:g.quan_he||null,
+    ngay_vao:g.ngay_vao||null, ghi_chu:g.ghi_chu||null,
+    da_khai_bao:!!g.da_khai_bao,
+    ngay_khai_bao: g.da_khai_bao ? (g.ngay_khai_bao || homNayVN()) : null
+  };
 }
 function manThanhVien(khach){
   Promise.all([
@@ -1949,9 +1966,9 @@ function manThanhVien(khach){
       '<div class="nha-pc" style="margin-bottom:14px">Người thuê: <b>'+esc(khach.ho_ten)+'</b>'+
       (khach.sdt?' ('+esc(khach.sdt)+')':'')+'</div>'+
       '<div style="text-align:right;margin-bottom:10px">'+
-      nutT('tv-them','+ Thêm','',CONG)+'</div>'+
+      nutT('tv-them','Thêm','',CONG)+'</div>'+
       '<div class="cuon"><table><thead><tr>'+
-      '<th>Tên</th><th>SĐT</th><th>CCCD</th><th>Ngày cấp</th><th>Nơi cấp</th><th>Thường trú</th><th>Quan hệ</th><th></th>'+
+      '<th>Tên</th><th>SĐT</th><th>CCCD</th><th>Ngày cấp</th><th>Nơi cấp</th><th>Thường trú</th><th>Quan hệ</th><th>Tạm trú</th><th></th>'+
       '</tr></thead><tbody id="tv-than"></tbody></table></div></div>'+
       '<div class="hop-chan">'+
       '<button class="nut phu" type="button" id="tv-chuyendi">Chuyển đi (kết thúc hợp đồng)</button>'+
@@ -1974,12 +1991,13 @@ function manThanhVien(khach){
           '<td>'+esc(tv.noi_cap||'—')+'</td>'+
           '<td>'+esc(tv.noi_cu_tru||'—')+'</td>'+
           '<td>'+esc(tv.quan_he||'—')+'</td>'+
+          '<td>'+(tv.da_khai_bao?'<span class="hieu-nho h-luc">Đã khai báo'+(tv.ngay_khai_bao?' '+ngay(tv.ngay_khai_bao):'')+'</span>':'<span class="hieu-nho h-vang">Chưa khai báo</span>')+'</td>'+
           '<td><span class="cap-nut" style="white-space:nowrap">'+
           '<button class="nut-tt" type="button" data-tv="sua" data-id="'+esc(tv.id)+'">Sửa</button>'+
           '<button class="nut-tt" type="button" data-tv="chuyen" data-id="'+esc(tv.id)+'">Chuyển hợp đồng</button>'+
           '<button class="nut-tt xoa" type="button" data-tv="xoa" data-id="'+esc(tv.id)+'">Xóa</button>'+
           '</span></td></tr>';
-      }).join('') || '<tr><td colspan="8" style="color:var(--chu-mo)">Chưa có thành viên nào ở cùng.</td></tr>';
+      }).join('') || '<tr><td colspan="9" style="color:var(--chu-mo)">Chưa có thành viên nào ở cùng.</td></tr>';
     }
     function taiLai(){
       return lay('thanh_vien_o_cung?select=*&hop_dong_id=eq.'+encodeURIComponent(hd.id)+'&order=ho_ten')
@@ -1996,13 +2014,8 @@ function manThanhVien(khach){
           kiem:kiemThanhVien,
           luu:function(g){
             return toChuc().then(function(tc){
-              return ghi('thanh_vien_o_cung','POST',[{
-                to_chuc_id:tc, hop_dong_id:hd.id, ho_ten:g.ho_ten.trim(), sdt:g.sdt||null,
-                so_dinh_danh:g.so_dinh_danh||null, ngay_sinh:g.ngay_sinh||null,
-                ngay_cap:g.ngay_cap||null, noi_cap:g.noi_cap||null,
-                noi_cu_tru:g.noi_cu_tru||null, quan_he:g.quan_he||null,
-                ngay_vao:g.ngay_vao||null, ghi_chu:g.ghi_chu||null
-              }]);
+              var r=thanThanhVien(g); r.to_chuc_id=tc; r.hop_dong_id=hd.id;
+              return ghi('thanh_vien_o_cung','POST',[r]);
             });
           },
           xongThi:taiLai
@@ -2019,12 +2032,7 @@ function manThanhVien(khach){
             o:oThanhVien(tv), nutLuu:'Lưu thay đổi', xong:'Đã lưu.',
             kiem:kiemThanhVien,
             luu:function(g){
-              return ghi('thanh_vien_o_cung?id=eq.'+encodeURIComponent(tv.id),'PATCH',{
-                ho_ten:g.ho_ten.trim(), sdt:g.sdt||null, so_dinh_danh:g.so_dinh_danh||null,
-                ngay_sinh:g.ngay_sinh||null, ngay_cap:g.ngay_cap||null, noi_cap:g.noi_cap||null,
-                noi_cu_tru:g.noi_cu_tru||null, quan_he:g.quan_he||null,
-                ngay_vao:g.ngay_vao||null, ghi_chu:g.ghi_chu||null
-              });
+              return ghi('thanh_vien_o_cung?id=eq.'+encodeURIComponent(tv.id),'PATCH',thanThanhVien(g));
             },
             xongThi:taiLai
           });
