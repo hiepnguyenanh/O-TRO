@@ -4,42 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ở TRỌ — AI Quản Lý Nhà Trọ</title>
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --nen:#F6F7F9; --the:#FFFFFF; --vien:#E5E8EC; --vien-nhat:#EFF1F4;
-  --chu:#141922; --chu-phu:#6A7280; --chu-mo:#9AA1AC;
-  --xanh:#2563EB; --xanh-nen:#EFF4FF; --xanh-dam:#1D4ED8;
+  --nen:#F8F4EC; --the:#FFFFFF; --vien:#E9E0D0; --vien-nhat:#F1EADC;
+  --chu:#2B2420; --chu-phu:#7A6F62; --chu-mo:#A79C8C;
+  --xanh:#BD6B53; --xanh-nen:#FBEEE7; --xanh-dam:#9C5542;
   --do:#DC2626; --do-nen:#FEF2F2;
   --luc:#059669; --luc-nen:#ECFDF5;
   --vang:#B45309; --vang-nen:#FFFBEB;
-  --tim:#6D4BEF;
-  --bong:0 1px 2px rgba(20,25,34,.04);
-  --bong2:0 4px 16px rgba(20,25,34,.07);
-  --dai:linear-gradient(100deg,#EEF4FF 0%,#F7F9FC 46%,var(--the) 100%);
-  --g1:linear-gradient(135deg,#2E6BF0,#1E4FD1); --g2:linear-gradient(135deg,#6D4BEF,#4B2FC9);
-  --g3:linear-gradient(135deg,#F58220,#DE6206); --g4:linear-gradient(135deg,#12B981,#059669);
+  --tim:#8FA888;
+  --bong:0 1px 2px rgba(43,36,32,.05);
+  --bong2:0 4px 16px rgba(43,36,32,.08);
+  --dai:linear-gradient(100deg,#FBF1E3 0%,#FAF6EC 46%,var(--the) 100%);
+  --g1:linear-gradient(135deg,#C1684B,#9C5542); --g2:linear-gradient(135deg,#9FB896,#7A9972);
+  --g3:linear-gradient(135deg,#F0A94E,#DE8A2C); --g4:linear-gradient(135deg,#12B981,#059669);
   --g5:linear-gradient(135deg,#EF4B6B,#D01F45);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --nen:#0E1218; --the:#161B23; --vien:#272E39; --vien-nhat:#1E242D;
-  --chu:#E9ECF1; --chu-phu:#98A1AE; --chu-mo:#6B7481;
-  --xanh:#5B8DEF; --xanh-nen:#182337; --xanh-dam:#7BA5F5;
+  --nen:#17130F; --the:#211B16; --vien:#352C23; --vien-nhat:#2A231C;
+  --chu:#F1E9DD; --chu-phu:#B3A594; --chu-mo:#7F7364;
+  --xanh:#E08A6B; --xanh-nen:#2E201A; --xanh-dam:#F0A080;
   --do:#F87171; --do-nen:#2A1719; --luc:#34D399; --luc-nen:#12241E;
-  --vang:#FBBF24; --vang-nen:#26200F; --tim:#8B72F5;
+  --vang:#FBBF24; --vang-nen:#26200F; --tim:#A8C09F;
   --bong:0 1px 2px rgba(0,0,0,.3); --bong2:0 4px 16px rgba(0,0,0,.4);
-  --dai:linear-gradient(100deg,#1B2333 0%,#171D26 46%,var(--the) 100%);
+  --dai:linear-gradient(100deg,#271D16 0%,#201A14 46%,var(--the) 100%);
 }}
 :root[data-theme="dark"]{
-  --nen:#0E1218; --the:#161B23; --vien:#272E39; --vien-nhat:#1E242D;
-  --chu:#E9ECF1; --chu-phu:#98A1AE; --chu-mo:#6B7481;
-  --xanh:#5B8DEF; --xanh-nen:#182337; --xanh-dam:#7BA5F5;
+  --nen:#17130F; --the:#211B16; --vien:#352C23; --vien-nhat:#2A231C;
+  --chu:#F1E9DD; --chu-phu:#B3A594; --chu-mo:#7F7364;
+  --xanh:#E08A6B; --xanh-nen:#2E201A; --xanh-dam:#F0A080;
   --do:#F87171; --do-nen:#2A1719; --luc:#34D399; --luc-nen:#12241E;
-  --vang:#FBBF24; --vang-nen:#26200F; --tim:#8B72F5;
+  --vang:#FBBF24; --vang-nen:#26200F; --tim:#A8C09F;
   --bong:0 1px 2px rgba(0,0,0,.3); --bong2:0 4px 16px rgba(0,0,0,.4);
-  --dai:linear-gradient(100deg,#1B2333 0%,#171D26 46%,var(--the) 100%);
+  --dai:linear-gradient(100deg,#271D16 0%,#201A14 46%,var(--the) 100%);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -53,8 +55,7 @@ body{margin:0; background:var(--nen); color:var(--chu);
 .hop-dn{width:100%; max-width:400px; background:var(--the); border:1px solid var(--vien);
   border-radius:18px; box-shadow:var(--bong2); padding:32px 30px}
 .hieu-dn{display:flex; align-items:center; gap:12px; margin-bottom:26px}
-.dau-hieu{width:44px; height:44px; border-radius:12px; flex:none; display:grid; place-items:center;
-  background:linear-gradient(135deg,var(--xanh),var(--tim)); color:#fff; font-weight:700; font-size:19px}
+.dau-hieu{width:44px; height:44px; border-radius:12px; flex:none; display:block; object-fit:cover}
 .hieu-dn b{display:block; font-size:21px; font-weight:700; letter-spacing:1px; line-height:1.2}
 .hieu-dn span{font-size:12px; color:var(--chu-phu)}
 .o-form{margin-bottom:15px}
@@ -451,7 +452,7 @@ tr.nhom-nha td{background:var(--vien-nhat); font-weight:700; font-size:14px; col
 <div id="man-dn">
   <form class="hop-dn" id="form-dn">
     <div class="hieu-dn">
-      <div class="dau-hieu">Ở</div>
+      <img class="dau-hieu" src="logo.png" alt="Ở TRỌ">
       <div><b>Ở TRỌ</b><span>AI Quản Lý Nhà Trọ</span></div>
     </div>
     <div class="o-form">
@@ -473,7 +474,7 @@ tr.nhom-nha td{background:var(--vien-nhat); font-weight:700; font-size:14px; col
 <div class="khung an" id="app">
   <nav class="menu">
     <div class="hieu">
-      <div class="dau-hieu">Ở</div>
+      <img class="dau-hieu" src="logo.png" alt="Ở TRỌ">
       <div class="hieu-chu"><b>Ở TRỌ</b><span>AI Quản Lý Nhà Trọ</span></div>
     </div>
     <div>
