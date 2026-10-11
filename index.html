@@ -2354,7 +2354,7 @@ function manHoaDon(el){
    ============================================================ */
 function dsKy(){
   var a=[], d=new Date(Date.now()+7*3600*1000);
-  for(var i=0;i<6;i++){
+  for(var i=0;i<12;i++){
     var t=new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()-i, 1));
     var k=t.getUTCFullYear()+'-'+('0'+(t.getUTCMonth()+1)).slice(-2)+'-01';
     a.push([k, 'Tháng '+nhanKy(k)]);
