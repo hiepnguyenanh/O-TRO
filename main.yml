@@ -1,0 +1,166 @@
+# ============================================================
+#  O TRO - SAO LUU KHO DU LIEU HANG NGAY
+#
+#  Goi mien phi cua Supabase KHONG co sao luu tu dong.
+#  File nay tu lam viec do, chay tren GitHub, khong ton dong nao.
+#
+#  CAN MOT KHOA BI MAT TEN: DATABASE_URL
+#  Khai o: kho nay > Settings > Secrets and variables > Actions
+#          > New repository secret > ten DATABASE_URL
+#  Lay gia tri: Supabase > nut Connect > muc "Session pooler"
+#          > copy URI > thay [YOUR-PASSWORD] bang mat khau that
+#
+#  BAT BUOC dung Session pooler cong 5432.
+#  Cong 6543 la Transaction pooler, khong chay duoc pg_dump.
+#  Duong noi thang chi co IPv6, may cua GitHub khong co IPv6.
+#
+#  LUU Y KHI SUA FILE NAY: chi co DUNG MOT cho dung cu phap
+#  ${{ ... }} la dong 37. Cac cho khac deu dung bien shell $BIEN
+#  cho de sua, vi cu phap ${{ }} hay bi roi rung khi copy qua chat.
+# ============================================================
+
+name: Sao luu O TRO
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sao-luu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v4
+
+      - name: Kiem tra da khai khoa bi mat chua
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::error::Chua khai khoa bi mat DATABASE_URL. Vao Settings > Secrets and variables > Actions > New repository secret. Chua co thi sao luu KHONG chay, va khong ai biet."
+            exit 1
+          fi
+          case "$DB_URL" in
+            *"[YOUR-PASSWORD]"*)
+              echo "::error::Chuoi ket noi con nguyen chu [YOUR-PASSWORD]. Phai thay bang mat khau co so du lieu that."
+              exit 1 ;;
+          esac
+          case "$DB_URL" in
+            *":6543/"*)
+              echo "::error::Chuoi dang dung cong 6543 (Transaction pooler). Doi thanh 5432 (Session pooler) thi pg_dump moi chay duoc."
+              exit 1 ;;
+          esac
+          case "$DB_URL" in
+            postgresql://*) ;;
+            *) echo "::error::Chuoi ket noi phai bat dau bang postgresql://"; exit 1 ;;
+          esac
+          echo "Khoa bi mat: da co, dinh dang hop le."
+
+      - name: Cai cong cu Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Xuat du lieu ra file
+        run: |
+          set -euo pipefail
+          NGAY=$(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d)
+          echo "NGAY=$NGAY" >> "$GITHUB_ENV"
+          mkdir -p ket-qua
+          echo "Dang xuat vai tro..."
+          supabase db dump --db-url "$DB_URL" -f ket-qua/01-vai-tro.sql --role-only
+          echo "Dang xuat cau truc bang..."
+          supabase db dump --db-url "$DB_URL" -f ket-qua/02-cau-truc.sql
+          echo "Dang xuat du lieu..."
+          supabase db dump --db-url "$DB_URL" -f ket-qua/03-du-lieu.sql --data-only --use-copy
+          echo "Xong ba phan."
+
+      - name: Kiem tra ban sao co that su co du lieu khong
+        run: |
+          set -euo pipefail
+          for f in ket-qua/01-vai-tro.sql ket-qua/02-cau-truc.sql ket-qua/03-du-lieu.sql; do
+            if [ ! -s "$f" ]; then
+              echo "::error::$f rong. Ban sao luu nay khong dung duoc."
+              exit 1
+            fi
+          done
+          if ! grep -q "CREATE TABLE" ket-qua/02-cau-truc.sql; then
+            echo "::error::Phan cau truc khong co bang nao. Kiem tra lai DATABASE_URL co tro dung kho O TRO khong."
+            exit 1
+          fi
+          for bang in nha_tro phong khach_thue hop_dong hoa_don; do
+            if ! grep -q "$bang" ket-qua/02-cau-truc.sql; then
+              echo "::error::Khong thay bang $bang. Day khong phai kho du lieu O TRO."
+              exit 1
+            fi
+          done
+          DONG=$(wc -l < ket-qua/03-du-lieu.sql)
+          if [ "$DONG" -lt 50 ]; then
+            echo "::error::Phan du lieu chi co $DONG dong - it bat thuong. Dung lai de nguoi xem."
+            exit 1
+          fi
+          echo "Du lieu: $DONG dong. Du 5 bang chinh. Dat."
+
+      - name: Nen lai
+        run: |
+          set -euo pipefail
+          tar -czf "o-tro-$NGAY.tar.gz" -C ket-qua .
+          sha256sum "o-tro-$NGAY.tar.gz" > "o-tro-$NGAY.tar.gz.sha256"
+          ls -lh "o-tro-$NGAY.tar.gz"
+
+      - name: Cat ban sao hang ngay, giu 90 ngay
+        uses: actions/upload-artifact@v4
+        with:
+          name: sao-luu-o-tro
+          path: |
+            o-tro-*.tar.gz
+            o-tro-*.tar.gz.sha256
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Ngay mung 1 thi cat them mot ban vinh vien vao kho
+        run: |
+          set -euo pipefail
+          MUNG=$(TZ=Asia/Ho_Chi_Minh date +%d)
+          if [ "$MUNG" != "01" ]; then
+            echo "Hom nay ngay $MUNG, khong phai mung 1. Bo qua ban vinh vien."
+            exit 0
+          fi
+          mkdir -p sao-luu-thang
+          cp "o-tro-$NGAY.tar.gz" sao-luu-thang/
+          git config user.name "Sao luu tu dong"
+          git config user.email "actions@github.com"
+          git add sao-luu-thang
+          if git diff --cached --quiet; then
+            echo "Khong co gi moi de luu."
+            exit 0
+          fi
+          git commit -m "Sao luu thang $NGAY"
+          git push
+
+      - name: Ghi tom tat cho nguoi doc
+        if: always()
+        run: |
+          {
+            echo "## Sao luu O TRO - ${NGAY:-khong ro ngay}"
+            echo ""
+            if ls o-tro-*.tar.gz >/dev/null 2>&1; then
+              echo "Da xong. Tai ban sao o muc **Artifacts** ngay duoi trang nay."
+              echo ""
+              echo "| Phan | Dung luong |"
+              echo "|---|---|"
+              for f in ket-qua/*.sql; do
+                echo "| $(basename "$f") | $(du -h "$f" | cut -f1) |"
+              done
+              echo ""
+              echo "Ban nen giu **90 ngay**. Ban mung 1 hang thang cat vinh vien trong thu muc sao-luu-thang."
+            else
+              echo "**SAO LUU THAT BAI.** Xem phan log do ben tren de biet ly do."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
