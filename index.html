@@ -1728,6 +1728,7 @@ function manKhach(el){
           else nut='<button class="nut-tt" type="button" data-kl="kb" data-id="'+esc(k.id)+'">'+
                      (k.da_khai_bao?'Bỏ khai báo':'Đã khai báo')+'</button>'+
                    '<button class="nut-tt" type="button" data-kl="sua" data-id="'+esc(k.id)+'">Sửa</button>'+
+                   (oDau[k.id]?'<button class="nut-tt" type="button" data-kl="thanhvien" data-id="'+esc(k.id)+'">Thành viên</button>':'')+
                    '<button class="nut-tt xoa" type="button" data-kl="xoa" data-id="'+esc(k.id)+'">Xóa</button>';
         }
         return '<tr'+(k.da_xoa?' class="da-xoa"':'')+'><td class="ten">'+esc(k.ho_ten)+
@@ -1757,6 +1758,7 @@ function manKhach(el){
         var k=timK(q.dataset.id); if(!k) return;
         var viec=q.dataset.kl;
         if(viec==='sua') suaKhach(k, lai);
+        else if(viec==='thanhvien') manThanhVien(k);
         else if(viec==='xoa'){
           if(oDau[k.id]){ banh(k.ho_ten+' đang thuê '+oDau[k.id]+'. Làm Trả phòng ở màn Nhà trọ trước rồi mới xóa được.'); return; }
           xoaKhach(k, lai);
@@ -1901,6 +1903,170 @@ function xuatKhach(ks, oDau){
     'Nơi cấp','Nơi thường trú','Nghề nghiệp','Đang ở','Tạm trú','Ngày khai báo','Ngày vào sổ']].concat(hang)]],
     'O-TRO-khach-thue-'+homNayVN()+'.xlsx');
   banh('Đã xuất '+hang.length+' khách ra file Excel.');
+}
+
+/* ---------- THÀNH VIÊN Ở CÙNG (người ở cùng chủ hộ trong một hợp đồng) ---------- */
+var QUAN_HE = ['Vợ','Chồng','Con','Cha','Mẹ','Anh','Chị','Em','Bạn','Khác'];
+function oThanhVien(tv){
+  tv=tv||{};
+  return [
+    {id:'ho_ten', nhan:'Họ và tên', batBuoc:true, rong:true, gt:tv.ho_ten, goiY:'Viết hoa có dấu, như trên căn cước'},
+    {id:'quan_he', nhan:'Quan hệ với người thuê', kieu:'chon', gt:tv.quan_he||'',
+     chon:[['','Chưa chọn']].concat(QUAN_HE.map(function(x){ return [x,x]; }))},
+    {id:'sdt', nhan:'Điện thoại', gt:tv.sdt, goiY:'0909 123 456'},
+    {id:'so_dinh_danh', nhan:'Số căn cước', gt:tv.so_dinh_danh, goiY:'12 chữ số'},
+    {id:'ngay_sinh', nhan:'Ngày sinh', kieu:'ngay', gt:tv.ngay_sinh?String(tv.ngay_sinh).slice(0,10):''},
+    {id:'ngay_cap', nhan:'Ngày cấp', kieu:'ngay', gt:tv.ngay_cap?String(tv.ngay_cap).slice(0,10):''},
+    {id:'noi_cap', nhan:'Nơi cấp', gt:(tv.id? tv.noi_cap : 'BỘ CÔNG AN')},
+    {id:'noi_cu_tru', nhan:'Nơi thường trú', rong:true, gt:tv.noi_cu_tru, goiY:'Số nhà, đường, phường, tỉnh thành'},
+    {id:'ngay_vao', nhan:'Ngày vào ở', kieu:'ngay', gt:tv.ngay_vao?String(tv.ngay_vao).slice(0,10):homNayVN()},
+    {id:'ghi_chu', nhan:'Ghi chú', kieu:'dai', rong:true, gt:tv.ghi_chu}
+  ];
+}
+function kiemThanhVien(g){
+  if(!g.ho_ten || g.ho_ten.trim().length<2) return 'Chưa điền họ tên.';
+  if(g.so_dinh_danh && !/^[0-9]{9,12}$/.test(g.so_dinh_danh))
+    return 'Số căn cước chỉ gồm chữ số, 9 tới 12 số. Bỏ trống cũng được.';
+  if(g.sdt && !/^[0-9\s.+()-]{8,15}$/.test(g.sdt)) return 'Số điện thoại trông không hợp lệ.';
+  return null;
+}
+function manThanhVien(khach){
+  Promise.all([
+    lay('hop_dong?select=id,phong_id,so_hop_dong,trang_thai&khach_thue_id=eq.'+encodeURIComponent(khach.id)+
+        '&trang_thai=in.(hieu_luc,sap_het_han)&order=ngay_bat_dau.desc&limit=1'),
+    lay('v_phong?select=id,ma_nha,ma_phong,dang_no')
+  ]).then(function(kq){
+    var hds=kq[0], ps=kq[1];
+    if(!hds.length){ banh(khach.ho_ten+' hiện không có hợp đồng đang hiệu lực.'); return; }
+    var hd=hds[0];
+    var p=ps.filter(function(x){ return x.id===hd.phong_id; })[0] || {};
+
+    var che=document.createElement('div'); che.className='man-che';
+    che.innerHTML='<div class="hop" role="dialog" aria-modal="true" aria-label="Thành viên ở cùng">'+
+      '<div class="hop-dau"><h2 id="tv-tieu">Thành viên</h2>'+
+      '<p>'+esc((p.ma_nha||'—')+' · '+(p.ma_phong||'—'))+'</p></div>'+
+      '<div class="hop-than">'+
+      '<div class="nha-pc" style="margin-bottom:14px">Người thuê: <b>'+esc(khach.ho_ten)+'</b>'+
+      (khach.sdt?' ('+esc(khach.sdt)+')':'')+'</div>'+
+      '<div style="text-align:right;margin-bottom:10px">'+
+      nutT('tv-them','+ Thêm','',CONG)+'</div>'+
+      '<div class="cuon"><table><thead><tr>'+
+      '<th>Tên</th><th>SĐT</th><th>CCCD</th><th>Ngày cấp</th><th>Nơi cấp</th><th>Thường trú</th><th>Quan hệ</th><th></th>'+
+      '</tr></thead><tbody id="tv-than"></tbody></table></div></div>'+
+      '<div class="hop-chan">'+
+      '<button class="nut phu" type="button" id="tv-chuyendi">Chuyển đi (kết thúc hợp đồng)</button>'+
+      '<button class="nut phu" type="button" id="tv-dong">Đóng</button></div></div>';
+    document.body.appendChild(che);
+    function dong(){ che.remove(); document.removeEventListener('keydown', phim); }
+    function phim(e){ if(e.key==='Escape') dong(); }
+    document.addEventListener('keydown', phim);
+    che.querySelector('#tv-dong').addEventListener('click', dong);
+    che.addEventListener('mousedown', function(e){ if(e.target===che) dong(); });
+
+    var tvs=[];
+    function ve(){
+      che.querySelector('#tv-tieu').textContent='Thành viên ('+tvs.length+' người)';
+      che.querySelector('#tv-than').innerHTML = tvs.map(function(tv){
+        return '<tr><td class="ten">'+esc(tv.ho_ten)+'</td>'+
+          '<td>'+esc(tv.sdt||'—')+'</td>'+
+          '<td>'+esc(tv.so_dinh_danh||'—')+'</td>'+
+          '<td>'+(tv.ngay_cap?ngay(tv.ngay_cap):'—')+'</td>'+
+          '<td>'+esc(tv.noi_cap||'—')+'</td>'+
+          '<td>'+esc(tv.noi_cu_tru||'—')+'</td>'+
+          '<td>'+esc(tv.quan_he||'—')+'</td>'+
+          '<td><span class="cap-nut" style="white-space:nowrap">'+
+          '<button class="nut-tt" type="button" data-tv="sua" data-id="'+esc(tv.id)+'">Sửa</button>'+
+          '<button class="nut-tt" type="button" data-tv="chuyen" data-id="'+esc(tv.id)+'">Chuyển hợp đồng</button>'+
+          '<button class="nut-tt xoa" type="button" data-tv="xoa" data-id="'+esc(tv.id)+'">Xóa</button>'+
+          '</span></td></tr>';
+      }).join('') || '<tr><td colspan="8" style="color:var(--chu-mo)">Chưa có thành viên nào ở cùng.</td></tr>';
+    }
+    function taiLai(){
+      return lay('thanh_vien_o_cung?select=*&hop_dong_id=eq.'+encodeURIComponent(hd.id)+'&order=ho_ten')
+        .then(function(ds){ tvs=ds; ve(); });
+    }
+    function timTV(id){ return tvs.filter(function(x){ return x.id===id; })[0]; }
+
+    che.addEventListener('click', function(e){
+      var th=e.target.closest('[data-lam]');
+      if(th && th.dataset.lam==='tv-them'){
+        moHop({
+          ten:'Thêm thành viên ở cùng', mo:'Người ở cùng '+khach.ho_ten+' trong phòng '+(p.ma_nha||'')+' '+(p.ma_phong||''),
+          o:oThanhVien(null), nutLuu:'Lưu', xong:'Đã thêm thành viên.',
+          kiem:kiemThanhVien,
+          luu:function(g){
+            return toChuc().then(function(tc){
+              return ghi('thanh_vien_o_cung','POST',[{
+                to_chuc_id:tc, hop_dong_id:hd.id, ho_ten:g.ho_ten.trim(), sdt:g.sdt||null,
+                so_dinh_danh:g.so_dinh_danh||null, ngay_sinh:g.ngay_sinh||null,
+                ngay_cap:g.ngay_cap||null, noi_cap:g.noi_cap||null,
+                noi_cu_tru:g.noi_cu_tru||null, quan_he:g.quan_he||null,
+                ngay_vao:g.ngay_vao||null, ghi_chu:g.ghi_chu||null
+              }]);
+            });
+          },
+          xongThi:taiLai
+        });
+        return;
+      }
+      var q=e.target.closest('[data-tv]');
+      if(q){
+        var tv=timTV(q.dataset.id); if(!tv) return;
+        var viec=q.dataset.tv;
+        if(viec==='sua'){
+          moHop({
+            ten:'Sửa thành viên', mo:tv.ho_ten,
+            o:oThanhVien(tv), nutLuu:'Lưu thay đổi', xong:'Đã lưu.',
+            kiem:kiemThanhVien,
+            luu:function(g){
+              return ghi('thanh_vien_o_cung?id=eq.'+encodeURIComponent(tv.id),'PATCH',{
+                ho_ten:g.ho_ten.trim(), sdt:g.sdt||null, so_dinh_danh:g.so_dinh_danh||null,
+                ngay_sinh:g.ngay_sinh||null, ngay_cap:g.ngay_cap||null, noi_cap:g.noi_cap||null,
+                noi_cu_tru:g.noi_cu_tru||null, quan_he:g.quan_he||null,
+                ngay_vao:g.ngay_vao||null, ghi_chu:g.ghi_chu||null
+              });
+            },
+            xongThi:taiLai
+          });
+        } else if(viec==='xoa'){
+          if(!hoiLai('Xóa '+tv.ho_ten+' khỏi danh sách thành viên ở cùng?')) return;
+          ghi('thanh_vien_o_cung?id=eq.'+encodeURIComponent(tv.id),'DELETE',null,'return=minimal')
+            .then(function(){ banh('Đã xóa '+tv.ho_ten+'.'); taiLai(); })
+            .catch(function(er){ banh('Không xóa được: '+(er.message||er)); });
+        } else if(viec==='chuyen'){
+          lay('hop_dong?select=id,so_hop_dong,phong_id&trang_thai=in.(hieu_luc,sap_het_han)&id=neq.'+encodeURIComponent(hd.id))
+            .then(function(khac){
+              var dsP=khac.map(function(h2){
+                var p2=ps.filter(function(x){ return x.id===h2.phong_id; })[0]||{};
+                return [h2.id, (p2.ma_nha||'—')+' · '+(p2.ma_phong||'—')+' ('+h2.so_hop_dong+')'];
+              });
+              if(!dsP.length){ banh('Không có hợp đồng nào khác đang hiệu lực để chuyển sang.'); return; }
+              moHop({
+                ten:'Chuyển hợp đồng cho '+tv.ho_ten,
+                mo:'Chuyển thành viên này sang ở cùng một hợp đồng khác (ví dụ đổi phòng, hoặc nhập nhầm hợp đồng).',
+                o:[{id:'hop_dong_moi', nhan:'Hợp đồng mới', kieu:'chon', batBuoc:true,
+                    chon:[['','Chọn hợp đồng']].concat(dsP), gt:''}],
+                nutLuu:'Chuyển', xong:'Đã chuyển hợp đồng.',
+                kiem:function(g){ return g.hop_dong_moi ? null : 'Chọn hợp đồng cần chuyển sang.'; },
+                luu:function(g){
+                  return ghi('thanh_vien_o_cung?id=eq.'+encodeURIComponent(tv.id),'PATCH',{hop_dong_id:g.hop_dong_moi});
+                },
+                xongThi:taiLai
+              });
+            });
+        }
+        return;
+      }
+      if(e.target.id==='tv-chuyendi'){
+        traPhong({
+          ma_nha:p.ma_nha, ma_phong:p.ma_phong, khach_thue:khach.ho_ten,
+          dang_no:p.dang_no, hop_dong_id:hd.id
+        }, function(){ dong(); });
+      }
+    });
+
+    taiLai();
+  }).catch(function(e){ banh('Không tải được: '+(e.message||e)); });
 }
 
 /* ---------- HÓA ĐƠN ----------
