@@ -1197,7 +1197,8 @@ function manNha(el){
       var nut = '<div class="cap-nut" style="margin-top:11px">'+
         (trong
           ? '<button class="nut-tt" type="button" data-thue="'+esc(p.id)+'">Cho thuê</button>'
-          : '<button class="nut-tt" type="button" data-giahan="'+esc(p.hop_dong_id)+'">Gia hạn</button>'+
+          : '<button class="nut-tt" type="button" data-suahd="'+esc(p.hop_dong_id)+'">Sửa hợp đồng</button>'+
+            '<button class="nut-tt" type="button" data-giahan="'+esc(p.hop_dong_id)+'">Gia hạn</button>'+
             '<button class="nut-tt xoa" type="button" data-tra="'+esc(p.hop_dong_id)+'">Trả phòng</button>')+
         '</div>';
       return '<article class="'+cls+'"><div class="ph-dau"><b>'+esc(p.ma_phong)+'</b>'+chips+'</div>'+
@@ -1219,13 +1220,16 @@ function manNha(el){
       veDS();
     });
     document.getElementById('ds-nha').addEventListener('click', function(e){
-      var t=e.target.closest('[data-thue],[data-giahan],[data-tra]');
+      var t=e.target.closest('[data-thue],[data-suahd],[data-giahan],[data-tra]');
       if(t){
         e.stopPropagation();
         var lam = function(){ moMan('nha'); };
         if(t.dataset.thue){
           var p=null; ps.forEach(function(x){ if(x.id===t.dataset.thue) p=x; });
           if(p) choThue(p, dsKhach, lam);
+        } else if(t.dataset.suahd){
+          var ps2=null; ps.forEach(function(x){ if(String(x.hop_dong_id)===t.dataset.suahd) ps2=x; });
+          if(ps2) suaHopDong(ps2, lam);
         } else if(t.dataset.giahan){
           var pg=null; ps.forEach(function(x){ if(String(x.hop_dong_id)===t.dataset.giahan) pg=x; });
           if(pg) giaHan(pg, lam);
@@ -1554,6 +1558,33 @@ function choThue(p, dsKhach, xongThi){
           don_gia_nuoc:g.don_gia_nuoc||0,
           trang_thai:'hieu_luc', ghi_chu:g.ghi_chu||null
         }]);
+      });
+    },
+    xongThi:xongThi
+  });
+}
+
+/* ---------- Sửa trực tiếp ngày bắt đầu/kết thúc/giá hợp đồng đang có
+   (khác Gia hạn: không tự tính từ ngày hết hạn cũ, sửa đúng con số đã nhập sai) ---------- */
+function suaHopDong(p, xongThi){
+  moHop({
+    ten:'Sửa hợp đồng '+p.ma_nha+' '+p.ma_phong,
+    mo:'Khách '+(p.khach_thue||'—')+'. Sửa đúng ngày/giá thật của hợp đồng, không tính thêm tháng như Gia hạn.',
+    o:[
+      {id:'ngay_bat_dau', nhan:'Ngày bắt đầu', kieu:'ngay', gt:p.ngay_bat_dau?String(p.ngay_bat_dau).slice(0,10):'', batBuoc:true},
+      {id:'ngay_ket_thuc', nhan:'Ngày kết thúc', kieu:'ngay', gt:p.ngay_ket_thuc?String(p.ngay_ket_thuc).slice(0,10):'', batBuoc:true},
+      {id:'gia_thue', nhan:'Giá thuê mỗi tháng (đồng)', kieu:'so', gt:Number(p.gia_thue)||0, batBuoc:true}
+    ],
+    nutLuu:'Lưu thay đổi', xong:'Đã sửa hợp đồng.',
+    kiem:function(g){
+      if(!g.ngay_bat_dau || !g.ngay_ket_thuc) return 'Chưa đủ ngày bắt đầu và kết thúc.';
+      if(g.ngay_ket_thuc < g.ngay_bat_dau) return 'Ngày kết thúc phải sau ngày bắt đầu.';
+      if(!g.gia_thue || g.gia_thue<=0) return 'Giá thuê phải lớn hơn 0.';
+      return null;
+    },
+    luu:function(g){
+      return ghi('hop_dong?id=eq.'+encodeURIComponent(p.hop_dong_id),'PATCH',{
+        ngay_bat_dau:g.ngay_bat_dau, ngay_ket_thuc:g.ngay_ket_thuc, gia_thue:g.gia_thue
       });
     },
     xongThi:xongThi
