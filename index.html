@@ -1959,7 +1959,7 @@ function manThanhVien(khach){
     var p=ps.filter(function(x){ return x.id===hd.phong_id; })[0] || {};
 
     var che=document.createElement('div'); che.className='man-che';
-    che.innerHTML='<div class="hop" role="dialog" aria-modal="true" aria-label="Thành viên ở cùng">'+
+    che.innerHTML='<div class="hop rong" role="dialog" aria-modal="true" aria-label="Thành viên ở cùng">'+
       '<div class="hop-dau"><h2 id="tv-tieu">Thành viên</h2>'+
       '<p>'+esc((p.ma_nha||'—')+' · '+(p.ma_phong||'—'))+'</p></div>'+
       '<div class="hop-than">'+
