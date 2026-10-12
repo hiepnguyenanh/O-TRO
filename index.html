@@ -123,6 +123,11 @@ h1 .gach{width:6px; height:30px; border-radius:3px; background:linear-gradient(1
 .m1{background:var(--g1)} .m2{background:var(--g2)} .m3{background:var(--g3)}
 .m4{background:var(--g4)} .m5{background:var(--g5)}
 .the{background:var(--the); border:1px solid var(--vien); border-radius:13px; box-shadow:var(--bong)}
+.mau.bam,.the.o.bam{cursor:pointer; transition:transform .12s,box-shadow .12s}
+tr.hang-bam{cursor:pointer}
+tr.hang-bam:hover{background:var(--xanh-nen)}
+.mau.bam:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.16)}
+.the.o.bam:hover{transform:translateY(-2px); box-shadow:var(--bong2); border-color:var(--xanh)}
 .the.o{padding:17px 19px}
 .the.o .nhan{font-size:12px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:var(--chu-phu)}
 .the.o .val{font-size:26px; font-weight:700; margin-top:6px; letter-spacing:-.5px;
@@ -880,24 +885,28 @@ function manBang(el){
       '<p class="dai-phu" style="margin:0 0 20px 18px">Số liệu thật từ kho dữ liệu · cập nhật lúc '+
         new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+'</p>'+
       '<div class="lo lo-5">'+
-        o('m1','Nhà trọ',nha.length)+o('m2','Tổng số phòng',tongPhong)+
-        o('m4','Số phòng cho thuê',thue)+o('m3','Số phòng trống',trong)+
-        o('m5','Số phòng nợ tiền',no)+
+        o('m1','Nhà trọ',nha.length,'nha','Bấm để xem danh sách nhà trọ')+
+        o('m2','Tổng số phòng',tongPhong,'tatca','Bấm để xem toàn bộ phòng')+
+        o('m4','Số phòng cho thuê',thue,'thue','Bấm để lọc phòng đang cho thuê')+
+        o('m3','Số phòng trống',trong,'trong','Bấm để lọc phòng đang trống')+
+        o('m5','Số phòng nợ tiền',no,'no','Bấm để lọc phòng đang nợ tiền')+
       '</div>'+
       '<div class="lo lo-4">'+
-        (laChuTro() ? w('Doanh thu tháng '+nhanKyLL,tien(TL.tongDT)+' đ','') : w('Doanh thu phòng tháng',tien(dt)+' đ',''))+
+        (laChuTro() ? w('Doanh thu tháng '+nhanKyLL,tien(TL.tongDT)+' đ','','baocaoth','Bấm để xem chi tiết doanh thu tháng '+nhanKyLL+' trong Báo cáo')
+                    : w('Doanh thu phòng tháng',tien(dt)+' đ','','nha','Tổng tiền phòng các phòng đang thuê'))+
         (laChuTro()
-          ? w('Chi phí tháng '+nhanKyLL,tien(TL.tongCP)+' đ','')+
-            w('Lợi nhuận tháng '+nhanKyLL,(TL.loiNhuan>=0?'+':'−')+tien(Math.abs(TL.loiNhuan))+' đ',TL.loiNhuan>=0?'tot':'xau')
-          : w('Số hóa đơn kỳ này',hdThang,'')+
-            w('Hợp đồng cần gia hạn',gh.length,gh.length?'xau':''))+
-        w('Tỷ lệ lấp đầy',pt(lapDay),'')+
+          ? w('Chi phí tháng '+nhanKyLL,tien(TL.tongCP)+' đ','','baocaoth','Bấm để xem chi tiết chi phí tháng '+nhanKyLL+' trong Báo cáo')+
+            w('Lợi nhuận tháng '+nhanKyLL,(TL.loiNhuan>=0?'+':'−')+tien(Math.abs(TL.loiNhuan))+' đ',TL.loiNhuan>=0?'tot':'xau','baocaoth',
+              'Doanh thu trừ chi phí tháng '+nhanKyLL+'. Bấm để xem chi tiết.')
+          : w('Số hóa đơn kỳ này',hdThang,'','hoadonky','Bấm để xem danh sách hóa đơn kỳ '+nhanKy(kyNay))+
+            w('Hợp đồng cần gia hạn',gh.length,gh.length?'xau':'','sap','Bấm để lọc hợp đồng sắp hết hạn'))+
+        w('Tỷ lệ lấp đầy',pt(lapDay),'','nha','Số phòng đang thuê / tổng số phòng')+
       '</div>'+
       '<div class="lo lo-4">'+
-        w('Tổng hóa đơn',tien(tongHD)+' đ','')+
-        w('Đã thu',tien(thuTien)+' đ','tot')+
-        w('Còn phải thu',tien(noTien)+' đ',noTien>0?'xau':'')+
-        w('Chỉ số chờ duyệt',cs.length,cs.length>0?'xau':'')+
+        w('Tổng hóa đơn',tien(tongHD)+' đ','','hoadon','Bấm để xem danh sách hóa đơn')+
+        w('Đã thu',tien(thuTien)+' đ','tot','hoadon','Tổng tiền đã thu qua hóa đơn. Bấm để xem chi tiết.')+
+        w('Còn phải thu',tien(noTien)+' đ',noTien>0?'xau':'','hoadonno','Bấm để xem các hóa đơn còn nợ')+
+        w('Chỉ số chờ duyệt',cs.length,cs.length>0?'xau':'','chiso','Bấm để sang màn Chỉ số điện nước')+
       '</div>'+
 
       '<div class="lo lo-2">'+
@@ -924,7 +933,8 @@ function manBang(el){
         var c = CL[r.ma_nha] || congCot([]), lai = c.loiNhuan;
         var hv = hoanVonCan(r.ma_nha, +(r.von_dau_tu||0), hd, dongHD, tc, kyLL);
         var p = phongCua(vph, r.ma_nha);
-        return '<tr><td class="ten">'+esc(r.ma_nha)+'</td>'+
+        return '<tr class="hang-bam" tabindex="0" role="button" data-dash-nha="'+esc(r.ma_nha)+
+          '" title="Bấm để xem chi tiết '+esc(r.ma_nha)+' trong Báo cáo"><td class="ten">'+esc(r.ma_nha)+'</td>'+
           '<td class="phai">'+tien(Math.round(c.tongDT))+'</td>'+
           '<td class="phai">'+tien(Math.round(c.tongCP))+'</td>'+
           '<td class="phai '+(lai<0?'am':'duong')+'">'+(lai<0?'−':'+')+tien(Math.abs(Math.round(lai)))+'</td>'+
@@ -976,7 +986,7 @@ function manBang(el){
       '<span>Trạng thái phòng tính từ hợp đồng, không lấy theo ô ghi tay.</span></p>'+
       '</div>';
 
-    veCot('bd-lapday', CAN, HV);
+    veCot('bd-lapday', CAN, HV, function(ma){ bcNha=ma; bcThang=kyLL.slice(5,7); bcNam=kyLL.slice(0,4); moMan('baocao'); });
     veThang('bd-thuchi', T6.map(function(x){return x.t;}), THU6, CHI6);
 
     /* Duyệt hoặc bỏ chỉ số Trợ Lý AI đọc về */
@@ -999,8 +1009,40 @@ function manBang(el){
         });
     });
 
-    function o(c,t,v){ return '<div class="mau '+c+'"><div class="ten">'+t+'</div><div class="val">'+v+'</div></div>'; }
-    function w(n,v,k){ return '<div class="the o"><div class="nhan">'+n+'</div><div class="val '+(k||'')+'">'+v+'</div></div>'; }
+    /* Bấm vào ô số liệu trên Bảng điều khiển để nhảy sang màn liên quan, có lọc sẵn */
+    function diDash(k){
+      if(k==='nha' || k==='tatca'){ locNha='tat-ca'; moMan('nha'); }
+      else if(k==='thue'){ locNha='thue'; moMan('nha'); }
+      else if(k==='trong'){ locNha='trong'; moMan('nha'); }
+      else if(k==='no'){ locNha='no'; moMan('nha'); }
+      else if(k==='sap'){ locNha='sap'; moMan('nha'); }
+      else if(k==='hoadon'){ hLoc={nha:'',ky:'',tt:''}; moMan('hoadon'); }
+      else if(k==='hoadonky'){ hLoc={nha:'',ky:kyNay+'-01',tt:''}; moMan('hoadon'); }
+      else if(k==='hoadonno'){ hLoc={nha:'',ky:'',tt:'qua_han'}; moMan('hoadon'); }
+      else if(k==='chiso'){ moMan('chiso'); }
+      else if(k==='baocaoth'){ bcNha=''; bcThang=kyLL.slice(5,7); bcNam=kyLL.slice(0,4); moMan('baocao'); }
+    }
+    function diDashNha(ma){ bcNha=ma; bcThang=kyLL.slice(5,7); bcNam=kyLL.slice(0,4); moMan('baocao'); }
+    el.addEventListener('click', function(e){
+      var d=e.target.closest('[data-dash]'); if(d){ diDash(d.dataset.dash); return; }
+      var r=e.target.closest('[data-dash-nha]'); if(r){ diDashNha(r.dataset.dashNha); }
+    });
+    el.addEventListener('keydown', function(e){
+      if(e.key!=='Enter' && e.key!==' ') return;
+      var d=e.target.closest('[data-dash]');
+      if(d){ e.preventDefault(); diDash(d.dataset.dash); return; }
+      var r=e.target.closest('[data-dash-nha]');
+      if(r){ e.preventDefault(); diDashNha(r.dataset.dashNha); }
+    });
+
+    function o(c,t,v,dash,goi){
+      return '<div class="mau '+c+(dash?' bam':'')+'"'+(dash?' tabindex="0" role="button" data-dash="'+dash+'"':'')+
+        (goi?' title="'+esc(goi)+'"':'')+'><div class="ten">'+t+'</div><div class="val">'+v+'</div></div>';
+    }
+    function w(n,v,k,dash,goi){
+      return '<div class="the o'+(dash?' bam':'')+'"'+(dash?' tabindex="0" role="button" data-dash="'+dash+'"':'')+
+        (goi?' title="'+esc(goi)+'"':'')+'><div class="nhan">'+n+'</div><div class="val '+(k||'')+'">'+v+'</div></div>';
+    }
     function r_(t,v,max){
       var p=Math.min(100, max? v*100/max : 0);
       return '<div><div class="thanh-ten"><span>'+t+'</span><b>'+v+' / '+max+'</b></div>'+
@@ -1010,7 +1052,8 @@ function manBang(el){
 }
 
 /* ---------- Biểu đồ cột: lấp đầy theo căn ---------- */
-function veCot(id, CAN, HV){
+function themMo(el, chu){ var t=sel('title',{}); t.textContent=chu; el.appendChild(t); return el; }
+function veCot(id, CAN, HV, onBam){
   var s=document.getElementById(id); if(!s) return; s.textContent='';
   var W=520,H=224,L=38,R=12,T=18,B=34, pw=W-L-R, ph=H-T-B;
   var y=function(v){ return T+ph-(v/100)*ph; };
@@ -1023,13 +1066,20 @@ function veCot(id, CAN, HV){
   var bw=Math.min(46,(pw/CAN.length)*0.52);
   CAN.forEach(function(d,i){
     var cx=L+(pw/CAN.length)*(i+0.5), h=Math.max(0,(d.v/100)*ph);
-    if(h>0) s.appendChild(sel('rect',{x:cx-bw/2,y:y(d.v),width:bw,height:h,rx:4,fill:bien('--xanh')}));
-    else s.appendChild(sel('rect',{x:cx-bw/2,y:y(0)-3,width:bw,height:3,rx:1.5,fill:bien('--vien')}));
+    var hv=HV[d.t];
+    var moTa=d.t+': lấp đầy '+String(d.v).replace('.',',')+'%'+(hv!=null?' · hòa vốn '+String(hv).replace('.',',')+'%':'')+
+      (onBam?' — bấm để xem chi tiết':'');
+    var g=sel('g',{style:onBam?'cursor:pointer':''});
+    if(h>0) g.appendChild(sel('rect',{x:cx-bw/2,y:y(d.v),width:bw,height:h,rx:4,fill:bien('--xanh')}));
+    else g.appendChild(sel('rect',{x:cx-bw/2,y:y(0)-3,width:bw,height:3,rx:1.5,fill:bien('--vien')}));
+    g.appendChild(sel('rect',{x:cx-bw/2,y:T,width:bw,height:ph,fill:'transparent'})); /* vùng bấm/hover rộng hơn cột */
+    themMo(g, moTa);
+    if(onBam) g.addEventListener('click', function(){ onBam(d.t); });
+    s.appendChild(g);
     var lb=sel('text',{x:cx,y:y(d.v)-8,'text-anchor':'middle','font-size':11.5,'font-weight':600,fill:bien('--chu')});
     lb.textContent=String(d.v).replace('.',',')+'%'; s.appendChild(lb);
     var nm=sel('text',{x:cx,y:H-12,'text-anchor':'middle','font-size':12,fill:bien('--chu-phu')});
     nm.textContent=d.t; s.appendChild(nm);
-    var hv=HV[d.t];
     if(hv!=null) s.appendChild(sel('line',{x1:cx-bw/2-5,x2:cx+bw/2+5,y1:y(hv),y2:y(hv),
       stroke:bien('--do'),'stroke-width':1.5,'stroke-dasharray':'4 3'}));
   });
@@ -1059,7 +1109,9 @@ function veThang(id, NHAN, THU, CHI){
     s.appendChild(sel('path',{d:d,fill:'none',stroke:p[1],'stroke-width':2.2,
       'stroke-linecap':'round','stroke-linejoin':'round'}));
     p[0].forEach(function(v,i){
-      s.appendChild(sel('circle',{cx:x(i),cy:y(v),r:3.5,fill:p[1],stroke:bien('--the'),'stroke-width':2}));
+      var c=sel('circle',{cx:x(i),cy:y(v),r:4.5,fill:p[1],stroke:bien('--the'),'stroke-width':2,style:'cursor:default'});
+      themMo(c, p[2]+' tháng '+NHAN[i]+': '+tien(v)+' đ');
+      s.appendChild(c);
     });
   });
 }
