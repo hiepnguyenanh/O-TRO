@@ -1222,7 +1222,7 @@ function manNha(el){
         var t=n.ps.filter(function(p){return p.trang_thai==='dang_thue';}).length;
         var nno=n.ps.filter(function(p){return +p.dang_no>0;}).length;
         var nhet=n.ps.filter(function(p){return p.hop_dong_het_han;}).length;
-        return '<section class="nha'+(i===0||tu||locNha!=='tat-ca'?' mo':'')+'">'+
+        return '<section class="nha'+(tu||locNha!=='tat-ca'?' mo':'')+'">'+
           '<div class="nha-bam" role="button" tabindex="0"><span class="ma-nha">'+esc(ma)+'</span>'+
           '<span class="nha-ten"><b>'+esc(n.ten)+'</b><span>'+esc(n.dc||'')+'</span></span>'+
           '<span class="nha-so">'+
