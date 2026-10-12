@@ -1122,10 +1122,12 @@ function manNha(el){
   el.innerHTML = daiHeader('Nhà trọ','Đang tải…')+dangTai();
   Promise.all([
     lay('v_phong?select=*&order=ma_nha,ma_phong'),
-    lay('nha_tro?select=id,ma_nha,ten_nha&order=ma_nha'),
+    lay('nha_tro?select=id,ma_nha,ten_nha,dia_chi,dinh_vi,pass_cong,ma_danh_bo_dien,ma_danh_bo_nuoc,'+
+        'hop_dong_internet,dich_vu_do_rac,stk_chu_nha,stk_nhan_thanh_toan&order=ma_nha'),
     lay('khach_thue?select=id,ho_ten,sdt&trang_thai_duyet=eq.da_duyet&da_xoa=is.false&order=ho_ten')
   ]).then(function(kq){
     var ps=kq[0], dsNha=kq[1], dsKhach=kq[2];
+    var nhaRow={}; dsNha.forEach(function(r){ nhaRow[r.ma_nha]=r; });
     var nha={}, thu=[];
     ps.forEach(function(p){ if(!nha[p.ma_nha]){ nha[p.ma_nha]={ten:p.ten_nha,dc:p.dia_chi,ps:[]}; thu.push(p.ma_nha); } nha[p.ma_nha].ps.push(p); });
     var tong=ps.length;
@@ -1221,14 +1223,15 @@ function manNha(el){
         var nno=n.ps.filter(function(p){return +p.dang_no>0;}).length;
         var nhet=n.ps.filter(function(p){return p.hop_dong_het_han;}).length;
         return '<section class="nha'+(i===0||tu||locNha!=='tat-ca'?' mo':'')+'">'+
-          '<button class="nha-bam" type="button"><span class="ma-nha">'+esc(ma)+'</span>'+
+          '<div class="nha-bam" role="button" tabindex="0"><span class="ma-nha">'+esc(ma)+'</span>'+
           '<span class="nha-ten"><b>'+esc(n.ten)+'</b><span>'+esc(n.dc||'')+'</span></span>'+
           '<span class="nha-so">'+
             '<span class="hieu-nho '+(t===n.ps.length?'h-luc':'h-vang')+'">'+t+'/'+n.ps.length+' phòng</span>'+
             (nno?'<span class="hieu-nho h-do">'+nno+' nợ</span>':'')+
             (nhet?'<span class="hieu-nho h-vang">'+nhet+' hết hạn HĐ</span>':'')+
+            (laChuTro()?'<button class="nut-tt" type="button" data-suanha="'+esc(ma)+'">Sửa thông tin</button>':'')+
             '<svg class="mui" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'+
-          '</span></button>'+
+          '</span></div>'+
           '<div class="nha-than"><div class="the-phong">'+dsp.map(thePhong).join('')+'</div></div></section>';
       }).join('') || '<div class="trang-thai">Không tìm thấy phòng nào.</div>';
     }
@@ -1272,6 +1275,13 @@ function manNha(el){
       veDS();
     });
     document.getElementById('ds-nha').addEventListener('click', function(e){
+      var sn=e.target.closest('[data-suanha]');
+      if(sn){
+        e.stopPropagation();
+        var rNha=nhaRow[sn.dataset.suanha];
+        if(rNha) suaThongTinNha(rNha, function(){ moMan('nha'); });
+        return;
+      }
       var t=e.target.closest('[data-thue],[data-suahd],[data-giahan],[data-tra]');
       if(t){
         e.stopPropagation();
@@ -1525,6 +1535,43 @@ function themNha(xongThi){
                       coc_chu_nha:g.coc_chu_nha||0, cap_nhat:new Date().toISOString()})
                  .then(function(){ return r; });
         });
+      });
+    },
+    xongThi:xongThi
+  });
+}
+
+/* ---------- Sửa thông tin một nhà trọ đã có (địa chỉ, danh bộ điện nước, STK...) ---------- */
+function suaThongTinNha(n, xongThi){
+  moHop({
+    ten:'Sửa thông tin '+n.ma_nha,
+    mo:n.ten_nha,
+    o:[
+      {id:'ten_nha', nhan:'Tên gọi', batBuoc:true, gt:n.ten_nha},
+      {id:'dia_chi', nhan:'Địa chỉ', rong:true, gt:n.dia_chi, goiY:'Số nhà, đường, phường, thành phố'},
+      {id:'dinh_vi', nhan:'Định vị (link Google Maps)', rong:true, gt:n.dinh_vi, goiY:'https://maps.app.goo.gl/...'},
+      {id:'pass_cong', nhan:'Pass cổng', gt:n.pass_cong},
+      {id:'ma_danh_bo_dien', nhan:'Mã danh bộ điện', rong:true, gt:n.ma_danh_bo_dien,
+       goiY:'Tên chủ hộ / mã khách hàng / đơn vị điện lực'},
+      {id:'ma_danh_bo_nuoc', nhan:'Mã danh bộ nước', rong:true, gt:n.ma_danh_bo_nuoc,
+       goiY:'Tên chủ hộ / mã khách hàng / đơn vị nước'},
+      {id:'hop_dong_internet', nhan:'Hợp đồng internet', rong:true, gt:n.hop_dong_internet},
+      {id:'dich_vu_do_rac', nhan:'Dịch vụ đổ rác', rong:true, gt:n.dich_vu_do_rac,
+       goiY:'Tên đơn vị / người thu / số điện thoại'},
+      {id:'stk_chu_nha', nhan:'STK chủ nhà', rong:true, gt:n.stk_chu_nha,
+       goiY:'Để trả tiền thuê sỉ hằng tháng'},
+      {id:'stk_nhan_thanh_toan', nhan:'STK nhận thanh toán', rong:true, gt:n.stk_nhan_thanh_toan,
+       goiY:'Tài khoản khách chuyển tiền thuê vào'}
+    ],
+    nutLuu:'Lưu thay đổi', xong:'Đã lưu thông tin '+n.ma_nha+'.',
+    kiem:function(g){ return (!g.ten_nha || !g.ten_nha.trim()) ? 'Chưa điền tên gọi.' : null; },
+    luu:function(g){
+      return ghi('nha_tro?id=eq.'+encodeURIComponent(n.id),'PATCH',{
+        ten_nha:g.ten_nha.trim(), dia_chi:g.dia_chi||null, dinh_vi:g.dinh_vi||null,
+        pass_cong:g.pass_cong||null, ma_danh_bo_dien:g.ma_danh_bo_dien||null,
+        ma_danh_bo_nuoc:g.ma_danh_bo_nuoc||null, hop_dong_internet:g.hop_dong_internet||null,
+        dich_vu_do_rac:g.dich_vu_do_rac||null, stk_chu_nha:g.stk_chu_nha||null,
+        stk_nhan_thanh_toan:g.stk_nhan_thanh_toan||null
       });
     },
     xongThi:xongThi
