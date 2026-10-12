@@ -261,6 +261,13 @@ td.ten{font-weight:600; font-variant-numeric:normal}
   padding:11px 13px; font:inherit; font-size:15px; color:var(--chu)}
 .o-form2 input:focus{outline:2px solid var(--xanh); outline-offset:-1px}
 .o-form2 .goi-y{font-size:12.5px; color:var(--chu-mo); margin-top:5px; display:block}
+.o-ngay{position:relative; display:flex; gap:8px; align-items:center}
+.o-ngay input[data-ngay]{flex:1}
+.nut-lich{flex:none; width:42px; height:42px; display:grid; place-items:center; border-radius:9px;
+  border:1px solid var(--vien); background:var(--the); color:var(--chu-phu); cursor:pointer; padding:0}
+.nut-lich:hover{background:var(--vien-nhat); color:var(--chu)}
+.nut-lich svg{width:19px; height:19px}
+.o-ngay-ham{position:absolute; width:0; height:0; opacity:0; pointer-events:none; border:0; padding:0}
 .bat-tat{display:flex; align-items:center; justify-content:space-between; gap:14px;
   padding:13px 0; border-bottom:1px solid var(--vien-nhat)}
 .bat-tat:last-child{border-bottom:0}
@@ -680,8 +687,13 @@ function oNhap(o){
   else if(o.kieu==='dai')
     noi='<textarea '+chung+' rows="3"'+(o.goiY?' placeholder="'+esc(o.goiY)+'"':'')+'>'+esc(o.gt==null?'':o.gt)+'</textarea>';
   else if(o.kieu==='ngay')
-    noi='<input '+chung+' type="text" inputmode="numeric" maxlength="10" data-ngay="1"'+
-      ' value="'+esc(isoToVN(o.gt))+'" placeholder="dd/mm/yyyy">';
+    noi='<div class="o-ngay">'+
+      '<input '+chung+' type="text" inputmode="numeric" maxlength="10" data-ngay="1"'+
+      ' value="'+esc(isoToVN(o.gt))+'" placeholder="dd/mm/yyyy">'+
+      '<button type="button" class="nut-lich" data-lich="'+id+'" tabindex="-1" aria-label="Chọn ngày bằng lịch">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+
+      '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button>'+
+      '<input type="date" id="'+id+'-dp" class="o-ngay-ham" tabindex="-1" value="'+esc(o.gt==null?'':o.gt)+'"></div>';
   else
     noi='<input '+chung+' type="'+(o.kieu==='so'?'number':'text')+'"'+
       (o.kieu==='so'?' inputmode="numeric" min="0" step="1"':'')+
@@ -734,6 +746,17 @@ function moHop(c){
   document.body.appendChild(che);
   che.querySelectorAll('input[data-ngay]').forEach(function(inp){
     inp.addEventListener('input', function(){ maskNgayInput(inp); });
+  });
+  che.querySelectorAll('[data-lich]').forEach(function(btn){
+    var inp=che.querySelector('#'+btn.dataset.lich);
+    var dp=che.querySelector('#'+btn.dataset.lich+'-dp');
+    if(!inp || !dp) return;
+    btn.addEventListener('click', function(){
+      var iso=vnToIso(inp.value); if(iso) dp.value=iso;
+      if(dp.showPicker) { try{ dp.showPicker(); }catch(e){ dp.focus(); dp.click(); } }
+      else { dp.focus(); dp.click(); }
+    });
+    dp.addEventListener('change', function(){ inp.value=isoToVN(dp.value); inp.focus(); });
   });
 
   var nutLuu=che.querySelector('#hop-luu'), oLoi=che.querySelector('#hop-loi');
