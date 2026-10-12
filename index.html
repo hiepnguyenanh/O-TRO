@@ -1715,7 +1715,10 @@ function manKhach(el){
   ]).then(function(kq){
     var ks=kq[0], ps=kq[1], nhas=kq[2];
     var oDau={}, nhaCua={};
-    ps.forEach(function(p){ if(p.khach_thue_id){ oDau[p.khach_thue_id]=p.ma_nha+' · '+p.ma_phong; nhaCua[p.khach_thue_id]=p.ma_nha; } });
+    ps.forEach(function(p){ if(p.khach_thue_id){
+      (oDau[p.khach_thue_id]=oDau[p.khach_thue_id]||[]).push(p.ma_nha+' · '+p.ma_phong);
+      (nhaCua[p.khach_thue_id]=nhaCua[p.khach_thue_id]||[]).push(p.ma_nha);
+    } });
     var cho = ks.filter(function(k){ return k.trang_thai_duyet==='cho_duyet' && !k.da_xoa; });
     var duyet = ks.filter(function(k){ return k.trang_thai_duyet!=='cho_duyet' && k.trang_thai_duyet!=='da_bo' && !k.da_xoa; });
     var daXoa = ks.filter(function(k){ return k.da_xoa; });
@@ -1745,8 +1748,8 @@ function manKhach(el){
     function locK(){
       var tu=(kLoc.tu||'').toLowerCase().trim();
       return (kXoa?daXoa:duyet).filter(function(k){
-        if(kLoc.nha==='_khong' && nhaCua[k.id]) return false;
-        if(kLoc.nha && kLoc.nha!=='_khong' && nhaCua[k.id]!==kLoc.nha) return false;
+        if(kLoc.nha==='_khong' && nhaCua[k.id] && nhaCua[k.id].length) return false;
+        if(kLoc.nha && kLoc.nha!=='_khong' && (!nhaCua[k.id] || nhaCua[k.id].indexOf(kLoc.nha)<0)) return false;
         if(kLoc.kb==='da' && !k.da_khai_bao) return false;
         if(kLoc.kb==='chua' && k.da_khai_bao) return false;
         if(tu && ((k.ho_ten||'')+' '+(k.sdt||'')+' '+(k.so_dinh_danh||'')).toLowerCase().indexOf(tu)<0) return false;
@@ -1818,7 +1821,7 @@ function manKhach(el){
             (k.da_xoa && k.ly_do_xoa?'<br><span class="hieu-nho h-vang">Lý do xóa: '+esc(k.ly_do_xoa)+'</span>':'')+'</td>'+
           '<td>'+esc(k.sdt||'—')+'</td>'+
           '<td>'+(k.so_dinh_danh?esc(k.so_dinh_danh):'<span class="hieu-nho h-vang">Chưa có số</span>')+'</td>'+
-          '<td style="white-space:nowrap">'+esc(oDau[k.id]||'—')+'</td><td>'+kb+'</td>'+
+          '<td style="white-space:nowrap">'+esc((oDau[k.id]||[]).join(', ')||'—')+'</td><td>'+kb+'</td>'+
           '<td>'+(nut?'<span class="cap-nut" style="white-space:nowrap">'+nut+'</span>':'—')+'</td></tr>';
       }).join('') || '<tr><td colspan="6" style="color:var(--chu-mo)">Không có khách nào khớp bộ lọc.</td></tr>';
       var chua=ds.filter(function(k){ return !k.da_khai_bao; }).length;
@@ -1843,7 +1846,7 @@ function manKhach(el){
         if(viec==='sua') suaKhach(k, lai);
         else if(viec==='thanhvien') manThanhVien(k);
         else if(viec==='xoa'){
-          if(oDau[k.id]){ banh(k.ho_ten+' đang thuê '+oDau[k.id]+'. Làm Trả phòng ở màn Nhà trọ trước rồi mới xóa được.'); return; }
+          if(oDau[k.id] && oDau[k.id].length){ banh(k.ho_ten+' đang thuê '+oDau[k.id].join(', ')+'. Làm Trả phòng ở màn Nhà trọ trước rồi mới xóa được.'); return; }
           xoaKhach(k, lai);
         }
         else if(viec==='phuc'){
@@ -1978,7 +1981,7 @@ function xuatKhach(ks, oDau){
   var hang=ks.map(function(k){
     return [k.ho_ten||'', k.sdt||'', k.so_dinh_danh||'', k.ngay_sinh?ngay(k.ngay_sinh):'',
             GT[k.gioi_tinh]||'', k.ngay_cap?ngay(k.ngay_cap):'', k.noi_cap||'',
-            k.noi_cu_tru||'', k.nghe_nghiep||'', oDau[k.id]||'',
+            k.noi_cu_tru||'', k.nghe_nghiep||'', (oDau[k.id]||[]).join(', '),
             k.da_khai_bao?'Đã khai báo':'Chưa khai báo', k.ngay_khai_bao?ngay(k.ngay_khai_bao):'',
             ngay(k.tao_luc)];
   });
