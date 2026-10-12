@@ -1595,7 +1595,7 @@ function choThue(p, dsKhach, xongThi){
       if(!g.khach_thue_id) return 'Chưa chọn khách.';
       if(!g.ngay_bat_dau) return 'Chưa chọn ngày vào ở.';
       if(!g.so_thang || g.so_thang<1 || g.so_thang>60) return 'Số tháng phải từ 1 tới 60.';
-      if(!g.gia_thue || g.gia_thue<=0) return 'Giá thuê phải lớn hơn 0.';
+      if(g.gia_thue==null || g.gia_thue<0) return 'Giá thuê không được âm. Để 0 nếu chủ nhà tự dùng, chỉ thu điện nước.';
       return null;
     },
     luu:function(g){
@@ -1631,7 +1631,7 @@ function suaHopDong(p, xongThi){
     kiem:function(g){
       if(!g.ngay_bat_dau || !g.ngay_ket_thuc) return 'Chưa đủ ngày bắt đầu và kết thúc.';
       if(g.ngay_ket_thuc < g.ngay_bat_dau) return 'Ngày kết thúc phải sau ngày bắt đầu.';
-      if(!g.gia_thue || g.gia_thue<=0) return 'Giá thuê phải lớn hơn 0.';
+      if(g.gia_thue==null || g.gia_thue<0) return 'Giá thuê không được âm. Để 0 nếu chủ nhà tự dùng, chỉ thu điện nước.';
       return null;
     },
     luu:function(g){
@@ -1661,7 +1661,7 @@ function giaHan(p, xongThi){
     nutLuu:'Gia hạn', xong:'Đã gia hạn hợp đồng.',
     kiem:function(g){
       if(!g.so_thang || g.so_thang<1 || g.so_thang>60) return 'Số tháng phải từ 1 tới 60.';
-      if(!g.gia_thue || g.gia_thue<=0) return 'Giá thuê phải lớn hơn 0.';
+      if(g.gia_thue==null || g.gia_thue<0) return 'Giá thuê không được âm. Để 0 nếu chủ nhà tự dùng, chỉ thu điện nước.';
       return null;
     },
     luu:function(g){
