@@ -1716,7 +1716,7 @@ function manKhach(el){
     var ks=kq[0], ps=kq[1], nhas=kq[2];
     var oDau={}, nhaCua={};
     ps.forEach(function(p){ if(p.khach_thue_id){
-      (oDau[p.khach_thue_id]=oDau[p.khach_thue_id]||[]).push(p.ma_nha+' · '+p.ma_phong);
+      (oDau[p.khach_thue_id]=oDau[p.khach_thue_id]||[]).push({nhan:p.ma_nha+' · '+p.ma_phong, hopDongId:p.hop_dong_id});
       (nhaCua[p.khach_thue_id]=nhaCua[p.khach_thue_id]||[]).push(p.ma_nha);
     } });
     var cho = ks.filter(function(k){ return k.trang_thai_duyet==='cho_duyet' && !k.da_xoa; });
@@ -1808,21 +1808,24 @@ function manKhach(el){
         var kb = k.da_khai_bao
           ? '<span class="hieu-nho h-luc">Đã khai báo'+(k.ngay_khai_bao?' '+ngay(k.ngay_khai_bao):'')+'</span>'
           : '<span class="hieu-nho h-vang">Chưa khai báo</span>';
-        var nut='';
-        if(laVanHanh()){
-          if(k.da_xoa) nut='<button class="nut-tt" type="button" data-kl="phuc" data-id="'+esc(k.id)+'">Khôi phục</button>';
-          else nut='<button class="nut-tt" type="button" data-kl="kb" data-id="'+esc(k.id)+'">'+
-                     (k.da_khai_bao?'Bỏ khai báo':'Đã khai báo')+'</button>'+
-                   '<button class="nut-tt" type="button" data-kl="sua" data-id="'+esc(k.id)+'">Sửa</button>'+
-                   (oDau[k.id]?'<button class="nut-tt" type="button" data-kl="thanhvien" data-id="'+esc(k.id)+'">Thành viên</button>':'')+
-                   '<button class="nut-tt xoa" type="button" data-kl="xoa" data-id="'+esc(k.id)+'">Xóa</button>';
-        }
-        return '<tr'+(k.da_xoa?' class="da-xoa"':'')+'><td class="ten">'+esc(k.ho_ten)+
-            (k.da_xoa && k.ly_do_xoa?'<br><span class="hieu-nho h-vang">Lý do xóa: '+esc(k.ly_do_xoa)+'</span>':'')+'</td>'+
-          '<td>'+esc(k.sdt||'—')+'</td>'+
-          '<td>'+(k.so_dinh_danh?esc(k.so_dinh_danh):'<span class="hieu-nho h-vang">Chưa có số</span>')+'</td>'+
-          '<td style="white-space:nowrap">'+esc((oDau[k.id]||[]).join(', ')||'—')+'</td><td>'+kb+'</td>'+
-          '<td>'+(nut?'<span class="cap-nut" style="white-space:nowrap">'+nut+'</span>':'—')+'</td></tr>';
+        var phongs = oDau[k.id] && oDau[k.id].length ? oDau[k.id] : [null];
+        return phongs.map(function(ph){
+          var nut='';
+          if(laVanHanh()){
+            if(k.da_xoa) nut='<button class="nut-tt" type="button" data-kl="phuc" data-id="'+esc(k.id)+'">Khôi phục</button>';
+            else nut='<button class="nut-tt" type="button" data-kl="kb" data-id="'+esc(k.id)+'">'+
+                       (k.da_khai_bao?'Bỏ khai báo':'Đã khai báo')+'</button>'+
+                     '<button class="nut-tt" type="button" data-kl="sua" data-id="'+esc(k.id)+'">Sửa</button>'+
+                     (ph?'<button class="nut-tt" type="button" data-kl="thanhvien" data-id="'+esc(k.id)+'" data-hd="'+esc(ph.hopDongId)+'">Thành viên</button>':'')+
+                     '<button class="nut-tt xoa" type="button" data-kl="xoa" data-id="'+esc(k.id)+'">Xóa</button>';
+          }
+          return '<tr'+(k.da_xoa?' class="da-xoa"':'')+'><td class="ten">'+esc(k.ho_ten)+
+              (k.da_xoa && k.ly_do_xoa?'<br><span class="hieu-nho h-vang">Lý do xóa: '+esc(k.ly_do_xoa)+'</span>':'')+'</td>'+
+            '<td>'+esc(k.sdt||'—')+'</td>'+
+            '<td>'+(k.so_dinh_danh?esc(k.so_dinh_danh):'<span class="hieu-nho h-vang">Chưa có số</span>')+'</td>'+
+            '<td style="white-space:nowrap">'+esc(ph?ph.nhan:'—')+'</td><td>'+kb+'</td>'+
+            '<td>'+(nut?'<span class="cap-nut" style="white-space:nowrap">'+nut+'</span>':'—')+'</td></tr>';
+        }).join('');
       }).join('') || '<tr><td colspan="6" style="color:var(--chu-mo)">Không có khách nào khớp bộ lọc.</td></tr>';
       var chua=ds.filter(function(k){ return !k.da_khai_bao; }).length;
       document.getElementById('chan-k').innerHTML = kXoa ? '' :
@@ -1844,7 +1847,7 @@ function manKhach(el){
         var k=timK(q.dataset.id); if(!k) return;
         var viec=q.dataset.kl;
         if(viec==='sua') suaKhach(k, lai);
-        else if(viec==='thanhvien') manThanhVien(k);
+        else if(viec==='thanhvien') manThanhVien(k, q.dataset.hd);
         else if(viec==='xoa'){
           if(oDau[k.id] && oDau[k.id].length){ banh(k.ho_ten+' đang thuê '+oDau[k.id].join(', ')+'. Làm Trả phòng ở màn Nhà trọ trước rồi mới xóa được.'); return; }
           xoaKhach(k, lai);
@@ -2033,10 +2036,12 @@ function thanThanhVien(g){
     ngay_khai_bao: g.da_khai_bao ? (g.ngay_khai_bao || homNayVN()) : null
   };
 }
-function manThanhVien(khach){
+function manThanhVien(khach, hopDongId){
   Promise.all([
-    lay('hop_dong?select=id,phong_id,so_hop_dong,trang_thai&khach_thue_id=eq.'+encodeURIComponent(khach.id)+
-        '&trang_thai=in.(hieu_luc,sap_het_han)&order=ngay_bat_dau.desc&limit=1'),
+    hopDongId
+      ? lay('hop_dong?select=id,phong_id,so_hop_dong,trang_thai&id=eq.'+encodeURIComponent(hopDongId))
+      : lay('hop_dong?select=id,phong_id,so_hop_dong,trang_thai&khach_thue_id=eq.'+encodeURIComponent(khach.id)+
+          '&trang_thai=in.(hieu_luc,sap_het_han)&order=ngay_bat_dau.desc&limit=1'),
     lay('v_phong?select=id,ma_nha,ma_phong,dang_no')
   ]).then(function(kq){
     var hds=kq[0], ps=kq[1];
