@@ -1706,6 +1706,12 @@ function traPhong(p, xongThi){
 /* ---------- KHÁCH THUÊ ---------- */
 var kTab='ds';
 var kLoc={nha:'', kb:'', tu:''}, kXoa=false;
+var kSapXep=0; /* 0=mặc định, 1=A-Z, 2=Z-A */
+function hieuSapXep(cot){
+  if(kSapXep===1) return ' <span style="opacity:.6">▲</span>';
+  if(kSapXep===2) return ' <span style="opacity:.6">▼</span>';
+  return ' <span style="opacity:.3">↕</span>';
+}
 function manKhach(el){
   el.innerHTML = daiHeader('Khách thuê','Đang tải…')+dangTai();
   Promise.all([
@@ -1775,13 +1781,20 @@ function manKhach(el){
             (kXoa?'← Về danh sách đang dùng':'Hiện khách đã xóa ('+daXoa.length+')')+'</button>'+
             (kXoa?'<span class="nha-pc">Khách đã xóa không hiện ở đâu khác. Bấm Khôi phục là trở lại sổ.</span>':'')+'</div>' : '')+
           '<div class="cuon"><table><thead><tr>'+
-          '<th>Khách thuê</th><th>Điện thoại</th><th>CMND/CCCD</th><th>Đang ở</th><th>Tạm trú</th><th>Thao tác</th>'+
+          '<th>Khách thuê</th><th>Điện thoại</th><th>CMND/CCCD</th>'+
+          '<th id="th-dango" data-sapxep="dango" style="cursor:pointer; user-select:none">Đang ở'+hieuSapXep('dango')+'</th>'+
+          '<th>Tạm trú</th><th>Thao tác</th>'+
           '</tr></thead><tbody id="tb-k"></tbody></table></div>'+
           '<p class="chan" style="margin:14px 0 0" id="chan-k"></p></div>';
         ve();
         document.getElementById('loc-k').addEventListener('change', function(){
           kLoc.nha=document.getElementById('k-nha').value; kLoc.kb=document.getElementById('k-kb').value; ve(); });
         document.getElementById('tim-k').addEventListener('input', function(){ kLoc.tu=this.value; ve(); });
+        document.getElementById('th-dango').addEventListener('click', function(){
+          kSapXep=(kSapXep+1)%3;
+          this.innerHTML='Đang ở'+hieuSapXep('dango');
+          ve();
+        });
       } else {
         n.innerHTML = '<div class="ds">'+
           '<p class="nhac-tab">Khách do Trợ Lý AI đọc từ ảnh căn cước gửi qua Telegram. Chưa duyệt thì chưa vào sổ, chưa ký được hợp đồng.</p>'+
@@ -1804,28 +1817,34 @@ function manKhach(el){
     }
     function ve(){
       var ds=locK();
-      document.getElementById('tb-k').innerHTML = ds.map(function(k){
+      /* Mỗi khách x mỗi hợp đồng đang có = một dòng riêng */
+      var hang=[];
+      ds.forEach(function(k){
+        var phongs = oDau[k.id] && oDau[k.id].length ? oDau[k.id] : [null];
+        phongs.forEach(function(ph){ hang.push({k:k, ph:ph}); });
+      });
+      if(kSapXep===1) hang.sort(function(a,b){ return (a.ph?a.ph.nhan:'').localeCompare(b.ph?b.ph.nhan:'','vi'); });
+      else if(kSapXep===2) hang.sort(function(a,b){ return (b.ph?b.ph.nhan:'').localeCompare(a.ph?a.ph.nhan:'','vi'); });
+      document.getElementById('tb-k').innerHTML = hang.map(function(x){
+        var k=x.k, ph=x.ph;
         var kb = k.da_khai_bao
           ? '<span class="hieu-nho h-luc">Đã khai báo'+(k.ngay_khai_bao?' '+ngay(k.ngay_khai_bao):'')+'</span>'
           : '<span class="hieu-nho h-vang">Chưa khai báo</span>';
-        var phongs = oDau[k.id] && oDau[k.id].length ? oDau[k.id] : [null];
-        return phongs.map(function(ph){
-          var nut='';
-          if(laVanHanh()){
-            if(k.da_xoa) nut='<button class="nut-tt" type="button" data-kl="phuc" data-id="'+esc(k.id)+'">Khôi phục</button>';
-            else nut='<button class="nut-tt" type="button" data-kl="kb" data-id="'+esc(k.id)+'">'+
-                       (k.da_khai_bao?'Bỏ khai báo':'Đã khai báo')+'</button>'+
-                     '<button class="nut-tt" type="button" data-kl="sua" data-id="'+esc(k.id)+'">Sửa</button>'+
-                     (ph?'<button class="nut-tt" type="button" data-kl="thanhvien" data-id="'+esc(k.id)+'" data-hd="'+esc(ph.hopDongId)+'">Thành viên</button>':'')+
-                     '<button class="nut-tt xoa" type="button" data-kl="xoa" data-id="'+esc(k.id)+'">Xóa</button>';
-          }
-          return '<tr'+(k.da_xoa?' class="da-xoa"':'')+'><td class="ten">'+esc(k.ho_ten)+
-              (k.da_xoa && k.ly_do_xoa?'<br><span class="hieu-nho h-vang">Lý do xóa: '+esc(k.ly_do_xoa)+'</span>':'')+'</td>'+
-            '<td>'+esc(k.sdt||'—')+'</td>'+
-            '<td>'+(k.so_dinh_danh?esc(k.so_dinh_danh):'<span class="hieu-nho h-vang">Chưa có số</span>')+'</td>'+
-            '<td style="white-space:nowrap">'+esc(ph?ph.nhan:'—')+'</td><td>'+kb+'</td>'+
-            '<td>'+(nut?'<span class="cap-nut" style="white-space:nowrap">'+nut+'</span>':'—')+'</td></tr>';
-        }).join('');
+        var nut='';
+        if(laVanHanh()){
+          if(k.da_xoa) nut='<button class="nut-tt" type="button" data-kl="phuc" data-id="'+esc(k.id)+'">Khôi phục</button>';
+          else nut='<button class="nut-tt" type="button" data-kl="kb" data-id="'+esc(k.id)+'">'+
+                     (k.da_khai_bao?'Bỏ khai báo':'Đã khai báo')+'</button>'+
+                   '<button class="nut-tt" type="button" data-kl="sua" data-id="'+esc(k.id)+'">Sửa</button>'+
+                   (ph?'<button class="nut-tt" type="button" data-kl="thanhvien" data-id="'+esc(k.id)+'" data-hd="'+esc(ph.hopDongId)+'">Thành viên</button>':'')+
+                   '<button class="nut-tt xoa" type="button" data-kl="xoa" data-id="'+esc(k.id)+'">Xóa</button>';
+        }
+        return '<tr'+(k.da_xoa?' class="da-xoa"':'')+'><td class="ten">'+esc(k.ho_ten)+
+            (k.da_xoa && k.ly_do_xoa?'<br><span class="hieu-nho h-vang">Lý do xóa: '+esc(k.ly_do_xoa)+'</span>':'')+'</td>'+
+          '<td>'+esc(k.sdt||'—')+'</td>'+
+          '<td>'+(k.so_dinh_danh?esc(k.so_dinh_danh):'<span class="hieu-nho h-vang">Chưa có số</span>')+'</td>'+
+          '<td style="white-space:nowrap">'+esc(ph?ph.nhan:'—')+'</td><td>'+kb+'</td>'+
+          '<td>'+(nut?'<span class="cap-nut" style="white-space:nowrap">'+nut+'</span>':'—')+'</td></tr>';
       }).join('') || '<tr><td colspan="6" style="color:var(--chu-mo)">Không có khách nào khớp bộ lọc.</td></tr>';
       var chua=ds.filter(function(k){ return !k.da_khai_bao; }).length;
       document.getElementById('chan-k').innerHTML = kXoa ? '' :
