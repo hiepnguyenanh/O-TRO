@@ -638,6 +638,32 @@ function homNayVN(){
   return new Date(Date.now()+7*3600*1000).toISOString().slice(0,10);
 }
 
+/* ---------- Ngày tháng hiển thị/nhập hoàn toàn bằng số: dd/mm/yyyy ----------
+   Lưu trong hệ thống vẫn là ISO yyyy-mm-dd như trước, chỉ đổi lúc hiện/đọc ô nhập. */
+function isoToVN(iso){
+  if(!iso) return '';
+  var p=String(iso).slice(0,10).split('-');
+  if(p.length!==3) return '';
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function vnToIso(vn){
+  vn=String(vn||'').trim();
+  var m=vn.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m) return null;
+  var d=+m[1], mo=+m[2], y=+m[3];
+  if(d<1||d>31||mo<1||mo>12) return null;
+  var cuoi=new Date(Date.UTC(y,mo,0)).getUTCDate();
+  if(d>cuoi) return null;
+  return y+'-'+('0'+mo).slice(-2)+'-'+('0'+d).slice(-2);
+}
+function maskNgayInput(el){
+  var so=el.value.replace(/[^0-9]/g,'').slice(0,8);
+  var ra=so;
+  if(so.length>4) ra=so.slice(0,2)+'/'+so.slice(2,4)+'/'+so.slice(4);
+  else if(so.length>2) ra=so.slice(0,2)+'/'+so.slice(2);
+  el.value=ra;
+}
+
 /* ---------- Hộp thoại nhập liệu dùng chung ---------- */
 function oNhap(o){
   var id='f-'+o.id, chung='id="'+id+'"'+(o.batBuoc?' required':'');
@@ -653,8 +679,11 @@ function oNhap(o){
         (String(x[0])===String(o.gt==null?'':o.gt)?' selected':'')+'>'+esc(x[1])+'</option>'; }).join('')+'</select>';
   else if(o.kieu==='dai')
     noi='<textarea '+chung+' rows="3"'+(o.goiY?' placeholder="'+esc(o.goiY)+'"':'')+'>'+esc(o.gt==null?'':o.gt)+'</textarea>';
+  else if(o.kieu==='ngay')
+    noi='<input '+chung+' type="text" inputmode="numeric" maxlength="10" data-ngay="1"'+
+      ' value="'+esc(isoToVN(o.gt))+'" placeholder="dd/mm/yyyy">';
   else
-    noi='<input '+chung+' type="'+(o.kieu==='so'?'number':o.kieu==='ngay'?'date':'text')+'"'+
+    noi='<input '+chung+' type="'+(o.kieu==='so'?'number':'text')+'"'+
       (o.kieu==='so'?' inputmode="numeric" min="0" step="1"':'')+
       ' value="'+esc(o.gt==null?'':o.gt)+'"'+(o.goiY?' placeholder="'+esc(o.goiY)+'"':'')+'>';
   return '<div class="o-form2'+(o.rong?' rong':'')+'"><label for="'+id+'">'+esc(o.nhan)+'</label>'+
@@ -666,6 +695,7 @@ function docO(ds){
     var e=document.getElementById('f-'+o.id); if(!e) return;
     if(o.kieu==='batTat') g[o.id]=e.checked;
     else if(o.kieu==='so') g[o.id]= e.value==='' ? null : Number(e.value);
+    else if(o.kieu==='ngay') g[o.id]= e.value.trim()==='' ? null : vnToIso(e.value);
     else g[o.id]= e.value==='' ? null : e.value;
   });
   return g;
@@ -702,6 +732,9 @@ function moHop(c){
       '<button class="nut" type="button" id="hop-luu">'+esc(c.nutLuu||'Lưu')+'</button>'+
     '</div></div>';
   document.body.appendChild(che);
+  che.querySelectorAll('input[data-ngay]').forEach(function(inp){
+    inp.addEventListener('input', function(){ maskNgayInput(inp); });
+  });
 
   var nutLuu=che.querySelector('#hop-luu'), oLoi=che.querySelector('#hop-loi');
   function dong(){ che.remove(); document.removeEventListener('keydown', phim); }
